@@ -1,0 +1,77 @@
+{% extends 'base.html'%}
+
+{% block title %}Dashboard{% endblock %} 
+
+{% block content %}
+
+<div class="container m-5">
+  <div class="row">
+    <div class="col">
+      <div class="card text-white bg-success mb-3" style="max-width: 18rem; margin-top: 20px;">
+        <div class="card-header">No Of Students Vaccinated</div>
+        <div class="card-body">
+          <h5 class="card-title">{{data1}}</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <h5 class="title">Upcoming Vaccination Drives</h5>
+        <hr />
+
+        {% for i in data%}
+            <div class="alert alert-success" id="avl">
+                Date: <strong id="date_id">{{i.date}}</strong> and No of Slots: <strong id="slot_id">{{i.no_of_slots}}</strong>
+                
+                {% if i.is_slote_done and user.is_school_coordinator %}
+               
+                <span class="badge badge-warning float-right">slot completed</span>
+                {% elif user.is_school_coordinator %}
+               <a class="btn btn-danger btn-sm float-right edit-btn" href="update/{{ i.id }}">Update</a>
+                {% endif %}
+                
+            </div>
+
+            {% endfor %}
+    </div>
+  </div>
+
+  {% endblock %} 
+
+  {% block script%}
+  <script>
+
+    $(document).ready(function() {
+
+          $("#update-vaccination-drive").click(function(e){
+            e.preventDefault()
+
+            let formData = new FormData();
+
+            formData.append("date", $("#form3").val());
+            formData.append("noOfVaccin", $("#form2").val());
+            formData.append("id", $("#edit").val());
+            formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+            
+            $.ajax({
+              url: "{% url 'update_vaccination_drive' %}",
+              type: "PUT",
+              data: formData,
+              contentType: false,
+              processData: false,
+              cache: false,
+
+        success: function (response) {
+          alert(JSON.stringify(response));
+        },
+
+        error: function (err) {
+          alert(JSON.stringify(err));
+        },
+          }); 
+      });
+
+      })
+    
+  </script>
+  {% endblock %}
+

@@ -1,0 +1,261 @@
+{% extends 'base.html' %} 
+
+{% block title %}Student Details{% endblock %} 
+
+{%block content %}
+<div class="container m-5">
+  <h1>Register Student Details By</h1>
+  <div class="form-check">
+    <input
+      class="form-check-input"
+      type="radio"
+      name="flexRadioDefault"
+      id="flexRadioDefault1"
+      value="using-form"
+      checked
+    />
+    <label class="form-check-label" for="flexRadioDefault1"> Using Form </label>
+  </div>
+  <div class="form-check">
+    <input
+      class="form-check-input"
+      type="radio"
+      name="flexRadioDefault"
+      id="flexRadioDefault2"
+      value="using-bulk-upload"
+    />
+    <label class="form-check-label" for="flexRadioDefault2">
+      Using Bulk Uplaod
+    </label>
+  </div>
+  <hr>
+
+  <!-- Form -->
+  <form action="{url 'save_student_detail'}" class="m-2" id="stdent-form">
+    {% csrf_token %}
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label for="firstname">First Name</label>
+        <input
+          type="text"
+          class="form-control"
+          id="firstname"
+          placeholder="First Name"
+          required
+        />
+      </div>
+
+      <div class="form-group col-md-6">
+        <label for="lastname">Last Name</label>
+        <input
+          type="text"
+          class="form-control"
+          id="lastname"
+          placeholder="Last Name"
+          required
+        />
+      </div>
+
+      <div class="form-group col-md-6">
+        <label for="username">User Name</label>
+        <input
+          type="text"
+          class="form-control"
+          id="username"
+          placeholder="User Name"
+          required
+        />
+      </div>
+
+      <div class="form-group col-md-6">
+        <label for="inputPassword4">Password</label>
+        <input
+          type="password"
+          class="form-control"
+          id="inputPassword4"
+          placeholder="Password"
+          required
+        />
+      </div>
+
+      <div class="form-group col-md-6">
+        <label for="inputEmail4">Email</label>
+        <input
+          type="email"
+          class="form-control"
+          id="inputEmail4"
+          placeholder="Email"
+          required
+        />
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="inputAddress">Address</label>
+      <input
+        type="text"
+        class="form-control"
+        id="inputAddress"
+        placeholder="1234 Main St"
+        required
+      />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label for="inputCity">City</label>
+        <input
+          type="text"
+          class="form-control"
+          id="inputCity"
+          placeholder="city"
+          required
+        />
+      </div>
+      <div class="form-group col-md-4">
+        <label for="inputState">State</label>
+        <input
+          type="text"
+          class="form-control"
+          id="inputState"
+          placeholder="state"
+          required
+        />
+      </div>
+      <div class="form-group col-md-2">
+        <label for="inputZip">Zip</label>
+        <input
+          type="text"
+          class="form-control"
+          id="inputZip"
+          placeholder="zip"
+          required
+        />
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" id="submit-btn">
+      Add User Details
+    </button>
+  </form>
+
+  <!-- For File Uplaod -->
+
+  <form class="m-3" id="stdent-bulk-uplaod">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="exampleFormControlFile1">Uplaod Student .xlsx file here</label>
+      <input type="file" class="form-control-file mt-2" id="exampleFormControlFile1">
+      <button type="button" class="btn btn-primary mt-3" id="uplaod-usser-details">Uplaod User Details</button>
+    </div>
+  </form>
+</div>
+{% endblock %} 
+
+{% block script%}
+<script>
+  $(document).ready(function () {
+    $("#submit-btn").click(function (e) {
+      e.preventDefault();
+
+      if (
+        $("#firstname").val() == "" ||
+        $("#lastname").val() == "" ||
+        $("#username").val() == "" ||
+        $("#inputPassword4").val() == "" ||
+        $("#inputEmail4").val() == "" ||
+        $("#inputAddress").val() == "" ||
+        $("#inputCity").val() == "" ||
+        $("#inputState").val() == "" ||
+        $("#inputZip").val() == ""
+      ) {
+        alert("All Input Fields are required");
+        return false;
+      }
+
+      let formData = new FormData();
+
+      formData.append("formType", $("#flexRadioDefault1").val());
+      formData.append("firstName", $("#firstname").val());
+      formData.append("lastName", $("#lastname").val());
+      formData.append("userName", $("#username").val());
+      formData.append("password", $("#inputPassword4").val());
+      formData.append("email", $("#inputEmail4").val());
+      formData.append("address", $("#inputAddress").val());
+      formData.append("city", $("#inputCity").val());
+      formData.append("state", $("#inputState").val());
+      formData.append("zipCode", $("#inputZip").val());
+      formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+      $.ajax({
+        url: "{% url 'save_student_detail' %}",
+        type: "POST",
+        data: formData,
+        contentType: false,
+        processData: false,
+        cache: false,
+
+        success: function (response) {
+          alert(JSON.stringify(response));
+        },
+
+        error: function (err) {
+          alert(JSON.stringify(err));
+        },
+      });
+    });
+
+    $("#flexRadioDefault2").click(function(e){
+        $("#stdent-form").hide()
+        $("#stdent-bulk-uplaod").show()
+    });
+
+    $("#flexRadioDefault1").click(function(e){
+        $("#stdent-form").show()
+        $("#stdent-bulk-uplaod").hide()
+    });
+
+    $("#stdent-bulk-uplaod").hide();
+
+    $("#uplaod-usser-details").click(function(e){
+
+        e.preventDefault()
+
+      if (
+        $("#exampleFormControlFile1").val() == ""
+      ) {
+        alert("Please select a .xlsx file");
+        return false;
+      }else if($("#exampleFormControlFile1").val().split('.')[1] != 'xlsx'){
+        alert("You can only upload .xlsx file")
+        return false
+      }
+
+      let formData = new FormData();
+
+      formData.append("formType", $("#flexRadioDefault2").val());
+      formData.append("file", $("#exampleFormControlFile1")[0].files[0]);
+      formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+      $.ajax({
+        url: "{% url 'save_student_detail' %}",
+        type: "POST",
+        data: formData,
+        contentType: false,
+        processData: false,
+        cache: false,
+
+        success: function (response) {
+          alert(JSON.stringify(response));
+        },
+
+        error: function (err) {
+          alert(JSON.stringify(err));
+        },
+      });
+        
+    })
+
+
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,277 @@
+{% extends 'base.html' %} 
+
+{% block title %}Generate Report{% endblock %} 
+
+{%block content %}
+<div class="container m-5">
+  <div class="form-row">
+    <div class="form-group col-md-3">
+      <label for="inputVaccinationStatus">Vaccinated Status</label>
+      <select id="inputVaccinationStatus" class="form-control">
+        <option value="yes">Vaccinated</option>
+        <option value="no">Not Vaccinated</option>
+      </select>
+    </div>
+    <div class="form-group col-md-3">
+      <label for="vaccination-date">Vaccinated Date</label>
+      <input type="text" id="vaccination-date" style="width:100%; height:55%; border:1px solid #ced4da; border-radius: 0.25rem;" />
+    </div>
+    <div class="form-group col-md-3">
+      <label for="nameOfVaccination">Name Of Vaccination</label>
+      <select id="nameOfVaccination" class="form-control">
+        <option value="">--Select Name Of Vaccine--</option>
+        <option value="covaxin">covaxin</option>
+        <option value="covishield">covishield</option>
+        <option value="sputnik">sputnik</option>
+      </select>
+    </div>
+    <div class="form-group col-md-3">
+      <button
+        type="button"
+        class="btn btn-outline-primary ml-5"
+        style="margin-top: 30px"
+        id="search-btn"
+      >
+        Search
+      </button>
+    </div>
+  </div>
+
+  <!-- Table -->
+
+  <table class="table table-striped mt-3" id="myTable">
+    <thead>
+      <tr>
+        <th>SL No</th>  
+        <th>Student First Name</th>  
+        <th>Student Last Name</th>  
+        <th>Address</th>  
+        <th>State</th>  
+        <th>City</th>  
+        <th>Zip Code</th>  
+        <th>Vaccination Status</th>  
+        <th>Vaccination Date</th>  
+        <th>Vaccination Name</th>  
+      </tr>
+    </thead>
+    <tbody id="table-row">  
+
+    </tbody> 
+  </table>
+
+  <div
+              class="btn-group float-right"
+              role="group"
+              aria-label="Basic example"
+            >
+              <!-- <button
+                type="button"
+                id="previos-btn-id"
+                class="btn btn-outline-secondary not-visible"
+                style="border-radius: 30px"
+              >
+                <span><i class="fas fa-minus"></i></span>
+              </button> -->
+              <button
+                type="button"
+                id="next-btn-id"
+                class="btn btn-outline-secondary"
+                style="border-radius: 30px; margin-left: 10px"
+                hidden="hidden"
+              >
+                <span><i class="fas fa-arrow-alt-circle-right"></i></span>
+              </button>
+            </div>
+
+            <button
+            type="button"
+            class="btn btn-outline-primary mb-5"
+            id="downlaod-btn"
+          ><i class="fa fa-download"></i>
+            Download as CSV   
+          </button>
+          </div>
+        </div>
+</div>
+{% endblock %} 
+
+{% block script%}
+<script>
+  $(document).ready(function () {
+    $("#vaccination-date").datepicker();
+
+    $(function () {
+      $("#vaccination-date").datepicker({
+        dateFormat: "dd-mm-yy",
+      });
+    });
+
+    $("#search-btn").click(function(e){
+    e.preventDefault()
+    pageOffset = 0
+      $("#table-row").empty();
+      searchStudentDetais(pageOffset);
+  });
+
+
+   function searchStudentDetais(pageOffset){
+
+    $.ajax({
+        url: `{% url 'filter_report'%}?offset=${pageOffset}`,
+        type: "GET",
+        data: {
+                vaccinationStatus: $("#inputVaccinationStatus").val(),
+                vaccinationDate: $("#vaccination-date").val(),
+                vaccinationName: $("#nameOfVaccination").val()
+            },
+        success: function(response){
+
+          $("#table-row").empty()
+
+          if( response['count'] > 0){
+          
+            response['results'].forEach(el => {
+                $("#table-row").append(
+                    `<tr><td>${el.id}</td><td>${el.first_name}</td><td>${el.last_name}</td><td>${el.address}</td><td>${el.state}</td><td>${el.city}</td><td>${el.zip}</td><td>${el.vaccination_status}</td><td>${el.vaccination_date}</td><td>${el.name_of_vaccination}</td></tr>`
+                )
+
+                if(response['next'] != null){
+                  $("#next-btn-id").removeAttr("hidden")
+
+                }else{
+                  $("#next-btn-id").attr("hidden", "hidden")
+                }
+            })
+          }else{
+            $("#next-btn-id").attr("hidden", "hidden")
+            alert("No Data Found")
+            
+          }
+        },
+        error: function(error){
+            alert(JSON.stringify(error))
+        }
+    });
+  };
+
+    $("#next-btn-id").click(function () {
+      pageOffset +=10
+      searchStudentDetais(pageOffset);
+    });
+
+   function convertToCSV(objArray) {
+      var array = typeof objArray != 'object' ? JSON.parse(objArray) : objArray;
+      var str = '';
+
+      for (var i = 0; i < array.length; i++) {
+        var line = '';
+        for (var index in array[i]) {
+          if (line != '') line += ','
+
+          line += array[i][index];
+        }
+
+        str += line + '\r\n';
+      }
+
+      return str;
+    };
+
+
+    function exportCSVFile(headers, items, fileTitle) {
+      if (headers) {
+        items.unshift(headers);
+      }
+
+      // Convert Object to JSON
+      var jsonObject = JSON.stringify(items);
+
+      var csv = convertToCSV(jsonObject);
+
+      var exportedFilenmae = fileTitle + '.csv' || 'export.csv';
+
+      var blob = new Blob([csv], {
+        type: 'text/csv;charset=utf-8;'
+      });
+      if (navigator.msSaveBlob) { // IE 10+
+        navigator.msSaveBlob(blob, exportedFilenmae);
+      } else {
+        var link = document.createElement("a");
+        if (link.download !== undefined) { // feature detection
+          // Browsers that support HTML5 download attribute
+          var url = URL.createObjectURL(blob);
+          link.setAttribute("href", url);
+          link.setAttribute("download", exportedFilenmae);
+          link.style.visibility = 'hidden';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      }
+    };
+
+
+    $("#downlaod-btn").click(function () {
+
+    $.ajax({
+      url: "{% url 'downlaod_as_csv' %}",
+      type: "GET",
+      data: {
+        vaccinationStatus: $("#inputVaccinationStatus").val(),
+        vaccinationDate: $("#vaccination-date").val(),
+        vaccinationName: $("#nameOfVaccination").val()
+      },
+
+    success: function (response) {
+      var headers = {
+          first_name: 'First Name',
+          last_name: 'Last Name',
+          username: 'Username',
+          email: 'Email',
+          address: 'Address',
+          city: 'City',
+          state: 'State',
+          zip: 'Zip Code',
+          vaccination_status: 'Vaccination Status',
+          name_of_vaccination: 'Name Of Vaccine',
+          vaccination_date: 'Vaccination Date'
+      };
+
+      itemsNotFormatted = response
+
+      var itemsFormatted = [];
+
+      // format the data
+      itemsNotFormatted.forEach((item) => {
+
+        itemsFormatted.push({
+          first_name: item.first_name,
+          last_name: item.last_name,
+          username: item.username,
+          email: item.email,
+          address: item.address,
+          city: item.city,
+          state: item.state,
+          zip: item.zip,
+          vaccination_status: item.vaccination_status,
+          name_of_vaccination: item.name_of_vaccination,
+          vaccination_date: item.vaccination_date,
+        });
+      });
+
+      var fileTitle = `Student Report`;
+
+      exportCSVFile(headers, itemsFormatted, fileTitle);
+
+
+    },
+    err: function (err) {
+
+      alert(err)
+
+    }
+  })
+})
+})
+</script>
+{% endblock %}
